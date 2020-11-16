@@ -5,7 +5,7 @@ import nacl
 import discord
 from discord.ext import commands
 
-TOKEN = 'МОЙ ТОКЕН ОТ DISCORD API'
+TOKEN = 'ВАШ DISCORD API ТОКЕН'
 
 intents = discord.Intents.all()
 
@@ -13,9 +13,9 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 
 con = psycopg2.connect(
-  database="МОЁ ИМЯ БД", 
-  user="postgres", 
-  password="МОЙ ПАРОЛЬ ОТ БД", 
+  database="ВАШЕ ИМЯ БД", 
+  user="ВАШ ПОЛЬЗОВАТЕЛЬ БД", 
+  password="ВАШ ПАРОЛЬ ОТ БД", 
   host="127.0.0.1", 
   port="5432"
 )
@@ -85,7 +85,7 @@ async def update_table(ctx):
 
 @bot.command(pass_context=True) 
 async def init(ctx):
-	'''эта команда регистрирует данный текстовый канал в системе'''
+	'''Эта команда регистрирует данный текстовый канал в системе'''
 	if not has_prem(ctx):
 		await ctx.send("Прав маловато, щенок");	
 		return
@@ -94,21 +94,21 @@ async def init(ctx):
 		cur = con.cursor()
 		cur.execute("INSERT INTO channels VALUES(%i, NULL, 'header', '{}', 'мэв', false)" % (ctx.channel.id))
 		con.commit()
-		await ctx.send("Канал успешно зарегестрирован");
+		await ctx.send("Канал успешно зарегистрирован");
 		await play(ctx, 'мэв/init.mp3')
 	else:
-		await ctx.send("Канал уже был зарегестрирован до этого");
+		await ctx.send("Канал уже был зарегистрирован до этого");
 
 @bot.command(pass_context=True) 
 async def header(ctx, head):
-	'''эта команда меняет заголовок очереди. Если в названии есть пробелы, то его нужно указать в кавычках'''
+	'''Эта команда меняет заголовок очереди. Если в названии есть пробелы, то его нужно указать в кавычках'''
 	if not has_prem(ctx):
 		await ctx.send("Прав маловато, щенок");	
 		return
 	id = ctx.channel.id
 	row = channel_by_id(id)
 	if row is None:
-		await ctx.send("Данный текстовый канал не зарегестрирован в системе (см. !init)");
+		await ctx.send("Данный текстовый канал не зарегистрирован в системе (см. !help init)");
 	else:
 		hero = row[4]
 		PLAY = play(ctx, '%s/header.mp3'%hero, row[5])
@@ -122,14 +122,14 @@ async def header(ctx, head):
 
 @bot.command(pass_context=True) 
 async def add_teacher(ctx, *teachers):
-	'''эта команда добавляет упомянутых преподователей в список очередей. Все неупомянания будут игнорироватся [упомянание начинается на @)))]'''
+	'''Эта команда добавляет упомянутых преподавателей в список очередей. Все неупомянания будут игнорироватся [упомянание начинается на @)))]'''
 	if not has_prem(ctx):
 		await ctx.send("Прав маловато, щенок");	
 		return
 	id = ctx.channel.id
 	row = channel_by_id(id)
 	if row is None:
-		await ctx.send("Данный текстовый канал не зарегестрирован в системе (см. !init)");
+		await ctx.send("Данный текстовый канал не зарегистрирован в системе (см. !help init)");
 	else:
 		alrd = row[3]
 		hero = row[4]
@@ -157,14 +157,14 @@ async def add_teacher(ctx, *teachers):
 		
 @bot.command(pass_context=True) 
 async def remove_teacher(ctx, *teachers):
-	'''эта команда удаляет упомянутых преподователей из списка очередей. Все неупомянания будут игнорироватся [упомянание начинается на @)))]'''
+	'''Эта команда удаляет упомянутых преподавателей из списка очередей. Все неупомянания будут игнорироватся [упомянание начинается на @)))]'''
 	if not has_prem(ctx):
 		await ctx.send("Прав маловато, щенок");	
 		return
 	id = ctx.channel.id
 	row = channel_by_id(id)
 	if row is None:
-		await ctx.send("Данный текстовый канал не зарегестрирован в системе (см. !init)")
+		await ctx.send("Данный текстовый канал не зарегистрирован в системе (см. !help init)")
 		return
 	hero = row[4]
 	PLAY = play(ctx, '%s/remove_teacher.mp3'%hero, row[5])
@@ -186,9 +186,13 @@ async def remove_teacher(ctx, *teachers):
 
 
 @bot.command(pass_context=True) 
-async def enqueue(ctx, teacher):
-	'''эта команда добавляет вызвавшего в очередь к упомянутому преподователю'''
-	print(teacher)
+async def enqueue(ctx, *teachers):
+	'''Эта команда добавляет вызвавшего в очередь к упомянутому преподавателю'''
+#	print(teacher)
+	if len(teachers) != 1:
+		await ctx.send("Вы должны упомянуть преподователя. Упомянание начинается на @)))");
+		return	
+	teacher = teachers[0]
 	if not teacher.startswith('<@') or not teacher.endswith('>'):
 		await ctx.send("Вы должны упомянуть преподователя. Упомянание начинается на @)))");
 		return	
@@ -201,13 +205,13 @@ async def enqueue(ctx, teacher):
 	
 	ch_i = channel_by_id(id)
 	if ch_i is None:
-		await ctx.send("Данный текстовый канал не зарегестрирован в системе (см. !init)");
+		await ctx.send("Данный текстовый канал не зарегистрирован в системе (см. !help init)");
 		return
 	hero = ch_i[4]
 	
 	rows = queues_by_id(id)
 	if rows is None or len(rows) == 0:
-		await ctx.send("Похоже, на сервере нет преподователей (см. !add_teacher)");
+		await ctx.send("Похоже, на сервере нет преподователей (см. !help add_teacher)");
 		return
 	cont = False
 	author = ctx.author.id
@@ -224,7 +228,7 @@ async def enqueue(ctx, teacher):
 		await ctx.send("Умный слишком дофига? Можно быть только в одной очереди за раз!");
 		return		
 	if is_in:
-		await ctx.send("А я не знаю такого преподователя (см. !add_teacher)");
+		await ctx.send("А я не знаю такого преподавателя (см. !help add_teacher)");
 		return	
 	
 	PLAY = play(ctx, '%s/enqueue.mp3' % hero, ch_i[5])
@@ -237,14 +241,32 @@ async def enqueue(ctx, teacher):
 	await ctx.message.delete();
 	await PLAY
 
+
 @bot.command(pass_context=True) 
 async def dequeue(ctx):
-	'''эта команда удаляет вызвавшего из очередей'''
+	'''Эта команда удаляет вызвавшего из очередей'''
 	id = ctx.channel.id
 	row = channel_by_id(id)
 	if row is None:
-		await ctx.send("Данный текстовый канал не зарегестрирован в системе (см. !init)");
+		await ctx.send("Данный текстовый канал не зарегистрирован в системе (см. !help init)");
 		return
+		
+	author = ctx.author.id		
+	
+	rows = queues_by_id(id)
+	cont = False
+	for tea in rows:
+		if author in tea[2]:
+			cont = True
+			break
+
+	if not cont:
+		if author == ID ВАШЕГО ИВАНОВА: # ID дискорд аккаунта Иванова)
+			await ctx.send("Иванов, хватит спамить :) (см. !help enqueue)");
+		else:
+			await ctx.send("Что бы выйти из очереди, в нее сначала надо зайти :) (см. !help enqueue)");
+		return
+	
 	hero = row[4]
 	PLAY = play(ctx, '%s/dequeue.mp3' % hero, row[5])
 	author = ctx.author.id		
@@ -252,6 +274,7 @@ async def dequeue(ctx):
 	for tea in row[3]:
 		cur.execute("UPDATE q_teachers SET students = array_remove(students, %i) WHERE ch_id = %i AND id = %s" % (author, id, tea))
 	con.commit()
+
 	await ctx.send("%s успешно исключён из очереди" % ctx.author.display_name);
 	await update_table(ctx);
 	await ctx.message.delete();
@@ -259,11 +282,11 @@ async def dequeue(ctx):
 	
 @bot.command(pass_context=True) 
 async def list(ctx, *teachers):
-	'''эта переносит список в конец истории сообщений'''
+	'''Эта переносит список в конец истории сообщений'''
 	id = ctx.channel.id
 	ch_i = channel_by_id(id)
 	if ch_i is None:
-		await ctx.send("Данный текстовый канал не зарегестрирован в системе (см. !init)");
+		await ctx.send("Данный текстовый канал не зарегистрирован в системе (см. !help init)");
 		return
 	hero = ch_i[4]
 	
@@ -288,19 +311,19 @@ async def list(ctx, *teachers):
 
 @bot.command(pass_context=True) 
 async def next(ctx):
-	'''эта команда вызывается преподователем. Она удаляет первого студента из очереди'''	
+	'''Эта команда вызывается преподавателем. Она перетягивает следующего студента из очереди в голосовой канал преподавателя'''	
 	id = ctx.channel.id
 	
 	ch_i = channel_by_id(id)
 	if ch_i is None:
-		await ctx.send("Данный текстовый канал не зарегестрирован в системе (см. !init)");
+		await ctx.send("Данный текстовый канал не зарегистрирован в системе (см. !help init)");
 		return
 	hero = ch_i[4]
 	
 	author = ctx.author.id		
 	rows = queues_by_id(id, author)
 	if len(rows) != 1:
-		await ctx.send("Вы точно перподователь?) (см. !add_teacher)")
+		await ctx.send("Вы точно перподаватель?) (см. !help add_teacher)")
 		return
 	row = rows[0]
 	
@@ -316,39 +339,38 @@ async def next(ctx):
 	cur.execute("UPDATE q_teachers SET students = array_remove(students, %i) WHERE ch_id = %i AND id = %s" % (st, id, author))
 	con.commit()
 	
-	await ctx.send("%s, можешь быть свободен)" % get_user(ctx, st).display_name)
-	
+	to_add = get_user(ctx, st)
+	await ctx.send("%s, добро пожаловать в ад)" % to_add.mention)
+	if not ctx.author.voice is None:
+		try:
+			await to_add.move_to(ctx.author.voice.channel)
+		except Exception as e:
+			print (e)
+			await ctx.send("%s, Ну, в голосовой канал сам себя перенесеш, ок да)" % to_add.mention)
+
 	if len(row[2]) > 1:	
-		to_add = get_user(ctx, row[2][1])
-		await ctx.send("%s, добро пожаловать в ад)" % to_add.mention)
-		if not ctx.author.voice is None:
-			try:
-				await to_add.move_to(ctx.author.voice.channel)
-			except Exception as e:
-				print (e)
-				await ctx.send("%s, Ну, в голосовой канал сам себя перенесеш, ок да)" % to_add.mention)
+		await ctx.send("%s, готовься, ты следующий)" % get_user(ctx, row[2][1]).display_name)
 	
 	PLAY = play(ctx, '%s/next.mp3'%hero, ch_i[5])
 	await update_table(ctx);
 	await ctx.message.delete();
 	await PLAY
-	
 
 @bot.command(pass_context=True) 
 async def finish(ctx):
-	'''эта команда вызывается преподователем. Она очищает очередь'''	
+	'''Эта команда вызывается преподавателем. Она очищает очередь'''	
 	id = ctx.channel.id
 	
 	ch_i = channel_by_id(id)
 	if ch_i is None:
-		await ctx.send("Данный текстовый канал не зарегестрирован в системе (см. !init)");
+		await ctx.send("Данный текстовый канал не зарегистрирован в системе (см. !help init)");
 		return
 	hero = ch_i[4]
 	
 	author = ctx.author.id		
 	rows = queues_by_id(id, author)
 	if len(rows) != 1:
-		await ctx.send("Вы точно перподователь?) (см. !add_teacher)")
+		await ctx.send("Вы точно перподаватель?) (см. !help add_teacher)")
 		return
 	row = rows[0]
 	
@@ -375,7 +397,7 @@ async def finish(ctx):
 
 @bot.command(pass_context=True) 
 async def voice(ctx, hero_num):
-	'''сменить героя озвучки. 0 - Мэв, 1 - Повелитель Могил, 2 - Рохан (Ловец Духов), 3 - Артас (Рыцарь Смерти)'''
+	'''Сменить героя озвучки. 0 - Мэв, 1 - Повелитель Могил, 2 - Рохан (Ловец Духов), 3 - Артас (Рыцарь Смерти)'''
 	if not has_prem(ctx):
 		await ctx.send("Прав маловато, щенок");	
 		return
@@ -383,16 +405,16 @@ async def voice(ctx, hero_num):
 	
 	ch_i = channel_by_id(id)
 	if ch_i is None:
-		await ctx.send("Данный текстовый канал не зарегестрирован в системе (см. !init)")
+		await ctx.send("Данный текстовый канал не зарегистрирован в системе (см. !help init)")
 		return
 	try:
 		hero_num = int(hero_num)
 	except Exception as e:
-		await ctx.send("необходимо ввести число от 0 до 3 (см. !voice)")
+		await ctx.send("необходимо ввести число от 0 до 3 (см. !help voice)")
 		print(e)
 		return		
 	if not hero_num in range(0, 4):
-		await ctx.send("необходимо ввести число от 0 до 3 (см. !voice)")
+		await ctx.send("необходимо ввести число от 0 до 3 (см. !help voice)")
 		return
 	PLAY = None
 	hero_n = ""
@@ -429,17 +451,17 @@ async def mute(ctx, mt):
 	
 	ch_i = channel_by_id(id)
 	if ch_i is None:
-		await ctx.send("Данный текстовый канал не зарегестрирован в системе (см. !init)")
+		await ctx.send("Данный текстовый канал не зарегистрирован в системе (см. !help init)")
 		return
 	
 	try:
 		mt = int(mt)
 	except Exception as e:
-		await ctx.send("необходимо ввести число от 0 до 1 (см. !mute)")
+		await ctx.send("необходимо ввести число от 0 до 1 (см. !help mute)")
 		print(e)
 		return	
 	if not mt in range(0,2):
-		await ctx.send("необходимо ввести число от 0 до 1 (см. !mute)")
+		await ctx.send("необходимо ввести число от 0 до 1 (см. !help mute)")
 		return
 	Play = None
 	cur = con.cursor()
@@ -459,4 +481,6 @@ async def mute(ctx, mt):
 bot.run(TOKEN)
 
 con.close()
-# url https://discordapp.com/oauth2/authorize?&client_id=765511007664865281&scope=bot&permissions=20527104
+
+# ссылка для приглашения моего бота:
+# https://discordapp.com/oauth2/authorize?&client_id=765511007664865281&scope=bot&permissions=20527104
