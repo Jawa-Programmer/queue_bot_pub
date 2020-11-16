@@ -70,8 +70,11 @@ async def update_table(ctx):
 	tes = queues_by_id(id)
 	for tet in tes:
 		msg += "\nОчередь к *%s*:" % get_user(ctx, tet[1]).display_name
+		if len(tet[2]) == 0:
+			msg += "\n*никто не пришел на мою фан-встречу* :("
 		for st in tet[2]:			
 			msg += "\n1. %s" % get_user(ctx, st).display_name
+		
 	msg += "\n======"
 	if ch_i[1] is None:
 		mesa = await ctx.send(msg)
@@ -100,7 +103,7 @@ async def init(ctx):
 		await ctx.send("Канал уже был зарегистрирован до этого");
 
 @bot.command(pass_context=True) 
-async def header(ctx, head):
+async def заголовок(ctx, head):
 	'''Эта команда меняет заголовок очереди. Если в названии есть пробелы, то его нужно указать в кавычках'''
 	if not has_prem(ctx):
 		await ctx.send("Прав маловато, щенок");	
@@ -121,7 +124,7 @@ async def header(ctx, head):
 		await PLAY
 
 @bot.command(pass_context=True) 
-async def add_teacher(ctx, *teachers):
+async def добавить_препода(ctx, *teachers):
 	'''Эта команда добавляет упомянутых преподавателей в список очередей. Все неупомянания будут игнорироватся [упомянание начинается на @)))]'''
 	if not has_prem(ctx):
 		await ctx.send("Прав маловато, щенок");	
@@ -150,13 +153,13 @@ async def add_teacher(ctx, *teachers):
 			cur.execute("INSERT INTO q_teachers VALUES (%i, %i, '{}');" % (id, tet))
 			I += 1
 		con.commit()
-		await ctx.send("%i преподователя добавлены успешно" % I);
+		await ctx.send("%i преподавателя добавлены успешно" % I);
 		await update_table(ctx);
 		await ctx.message.delete();
 		await PLAY
 		
 @bot.command(pass_context=True) 
-async def remove_teacher(ctx, *teachers):
+async def изгнать_препода(ctx, *teachers):
 	'''Эта команда удаляет упомянутых преподавателей из списка очередей. Все неупомянания будут игнорироватся [упомянание начинается на @)))]'''
 	if not has_prem(ctx):
 		await ctx.send("Прав маловато, щенок");	
@@ -179,22 +182,22 @@ async def remove_teacher(ctx, *teachers):
 		cur.execute("UPDATE channels SET teachers = array_remove(teachers, %i) WHERE id = %i;" % (tet, id))
 		cur.execute("DELETE FROM q_teachers WHERE ch_id = %i AND id = %i" % (id, tet))
 	con.commit()
-	await ctx.send("Преподователи успешно удалены");
+	await ctx.send("Преподаватели успешно удалены");
 	await update_table(ctx);
 	await ctx.message.delete();
 	await PLAY
 
 
 @bot.command(pass_context=True) 
-async def enqueue(ctx, *teachers):
+async def к(ctx, *teachers):
 	'''Эта команда добавляет вызвавшего в очередь к упомянутому преподавателю'''
 #	print(teacher)
 	if len(teachers) != 1:
-		await ctx.send("Вы должны упомянуть преподователя. Упомянание начинается на @)))");
+		await ctx.send("Вы должны упомянуть преподавателя. Упомянание начинается на @)))");
 		return	
 	teacher = teachers[0]
 	if not teacher.startswith('<@') or not teacher.endswith('>'):
-		await ctx.send("Вы должны упомянуть преподователя. Упомянание начинается на @)))");
+		await ctx.send("Вы должны упомянуть преподавателя. Упомянание начинается на @)))");
 		return	
 	id = ctx.channel.id
 	
@@ -211,7 +214,7 @@ async def enqueue(ctx, *teachers):
 	
 	rows = queues_by_id(id)
 	if rows is None or len(rows) == 0:
-		await ctx.send("Похоже, на сервере нет преподователей (см. !help add_teacher)");
+		await ctx.send("Похоже, на сервере нет преподователей (см. !help добавить_препода)");
 		return
 	cont = False
 	author = ctx.author.id
@@ -228,7 +231,7 @@ async def enqueue(ctx, *teachers):
 		await ctx.send("Умный слишком дофига? Можно быть только в одной очереди за раз!");
 		return		
 	if is_in:
-		await ctx.send("А я не знаю такого преподавателя (см. !help add_teacher)");
+		await ctx.send("А я не знаю такого преподавателя (см. !help добавить_препода)");
 		return	
 	
 	PLAY = play(ctx, '%s/enqueue.mp3' % hero, ch_i[5])
@@ -243,7 +246,7 @@ async def enqueue(ctx, *teachers):
 
 
 @bot.command(pass_context=True) 
-async def dequeue(ctx):
+async def прочь(ctx):
 	'''Эта команда удаляет вызвавшего из очередей'''
 	id = ctx.channel.id
 	row = channel_by_id(id)
@@ -262,9 +265,9 @@ async def dequeue(ctx):
 
 	if not cont:
 		if author == ID ВАШЕГО ИВАНОВА: # ID дискорд аккаунта Иванова)
-			await ctx.send("Иванов, хватит спамить :) (см. !help enqueue)");
+			await ctx.send("Иванов, хватит спамить :) (см. !help к)");
 		else:
-			await ctx.send("Что бы выйти из очереди, в нее сначала надо зайти :) (см. !help enqueue)");
+			await ctx.send("Что бы выйти из очереди, в нее сначала надо зайти :) (см. !help к)");
 		return
 	
 	hero = row[4]
@@ -281,7 +284,7 @@ async def dequeue(ctx):
 	await PLAY
 	
 @bot.command(pass_context=True) 
-async def list(ctx, *teachers):
+async def список(ctx, *teachers):
 	'''Эта переносит список в конец истории сообщений'''
 	id = ctx.channel.id
 	ch_i = channel_by_id(id)
@@ -295,6 +298,8 @@ async def list(ctx, *teachers):
 	tes = queues_by_id(id)
 	for tet in tes:
 		msg += "\nОчередь к *%s*:" % get_user(ctx, tet[1]).display_name
+		if len(tet[2]) == 0:
+			msg += "\n*никто не пришел на мою фан-встречу* :("
 		for st in tet[2]:
 			msg += "\n1. %s" % get_user(ctx, st).display_name
 	if not ch_i[1] is None:
@@ -310,7 +315,7 @@ async def list(ctx, *teachers):
 
 
 @bot.command(pass_context=True) 
-async def next(ctx):
+async def далее(ctx):
 	'''Эта команда вызывается преподавателем. Она перетягивает следующего студента из очереди в голосовой канал преподавателя'''	
 	id = ctx.channel.id
 	
@@ -323,7 +328,7 @@ async def next(ctx):
 	author = ctx.author.id		
 	rows = queues_by_id(id, author)
 	if len(rows) != 1:
-		await ctx.send("Вы точно перподаватель?) (см. !help add_teacher)")
+		await ctx.send("Вы точно перподаватель?) (см. !help добавить_препода)")
 		return
 	row = rows[0]
 	
@@ -346,10 +351,10 @@ async def next(ctx):
 			await to_add.move_to(ctx.author.voice.channel)
 		except Exception as e:
 			print (e)
-			await ctx.send("%s, Ну, в голосовой канал сам себя перенесеш, ок да)" % to_add.mention)
+			await ctx.send("%s, Ну, в голосовой канал сам себя перенесеш, ок да)" % to_add.display_name)
 
 	if len(row[2]) > 1:	
-		await ctx.send("%s, готовься, ты следующий)" % get_user(ctx, row[2][1]).display_name)
+		await ctx.send("%s, готовься, ты следующий)" % get_user(ctx, row[2][1]).mention)
 	
 	PLAY = play(ctx, '%s/next.mp3'%hero, ch_i[5])
 	await update_table(ctx);
@@ -357,7 +362,7 @@ async def next(ctx):
 	await PLAY
 
 @bot.command(pass_context=True) 
-async def finish(ctx):
+async def яспать(ctx):
 	'''Эта команда вызывается преподавателем. Она очищает очередь'''	
 	id = ctx.channel.id
 	
@@ -370,7 +375,7 @@ async def finish(ctx):
 	author = ctx.author.id		
 	rows = queues_by_id(id, author)
 	if len(rows) != 1:
-		await ctx.send("Вы точно перподаватель?) (см. !help add_teacher)")
+		await ctx.send("Вы точно перподаватель?) (см. !help добавить_препода)")
 		return
 	row = rows[0]
 	
@@ -396,7 +401,7 @@ async def finish(ctx):
 	
 
 @bot.command(pass_context=True) 
-async def voice(ctx, hero_num):
+async def голос(ctx, hero_num):
 	'''Сменить героя озвучки. 0 - Мэв, 1 - Повелитель Могил, 2 - Рохан (Ловец Духов), 3 - Артас (Рыцарь Смерти)'''
 	if not has_prem(ctx):
 		await ctx.send("Прав маловато, щенок");	
@@ -410,11 +415,11 @@ async def voice(ctx, hero_num):
 	try:
 		hero_num = int(hero_num)
 	except Exception as e:
-		await ctx.send("необходимо ввести число от 0 до 3 (см. !help voice)")
+		await ctx.send("необходимо ввести число от 0 до 3 (см. !help голос)")
 		print(e)
 		return		
 	if not hero_num in range(0, 4):
-		await ctx.send("необходимо ввести число от 0 до 3 (см. !help voice)")
+		await ctx.send("необходимо ввести число от 0 до 3 (см. !help голос)")
 		return
 	PLAY = None
 	hero_n = ""
@@ -442,7 +447,7 @@ async def voice(ctx, hero_num):
 	
 
 @bot.command(pass_context=True) 
-async def mute(ctx, mt):
+async def заткнуться(ctx, mt):
 	'''Если вам надоела озвучка, поставьте mute 1. Когда захотите снова услышать героев, поставьте mute 0'''
 	if not has_prem(ctx):
 		await ctx.send("Прав маловато, щенок");	
@@ -457,11 +462,11 @@ async def mute(ctx, mt):
 	try:
 		mt = int(mt)
 	except Exception as e:
-		await ctx.send("необходимо ввести число от 0 до 1 (см. !help mute)")
+		await ctx.send("необходимо ввести число от 0 до 1 (см. !help заткнуться)")
 		print(e)
 		return	
 	if not mt in range(0,2):
-		await ctx.send("необходимо ввести число от 0 до 1 (см. !help mute)")
+		await ctx.send("необходимо ввести число от 0 до 1 (см. !help заткнуться)")
 		return
 	Play = None
 	cur = con.cursor()
@@ -481,6 +486,4 @@ async def mute(ctx, mt):
 bot.run(TOKEN)
 
 con.close()
-
-# ссылка для приглашения моего бота:
-# https://discordapp.com/oauth2/authorize?&client_id=765511007664865281&scope=bot&permissions=20527104
+# url https://discordapp.com/oauth2/authorize?&client_id=765511007664865281&scope=bot&permissions=20527104
